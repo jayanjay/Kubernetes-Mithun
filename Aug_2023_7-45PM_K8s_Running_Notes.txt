@@ -1,0 +1,415 @@
+Containerization --> Docker, Rocket(Rkt),Container-d
+Container Orchestration Tools --> Docker Swarm,Kubernetes,OpenShift
+
+
+Installation
+============
+
+Local K8s Cluster(Single Node K8s Cluster)
+-----------------
+minikube
+Kind
+
+
+Self Managed K8's Cluster
+-------------------------
+
+kubeadm   --> We can setup multi node k8's cluster using kubeadm.
+kubespray --> We can setup multi node k8's cluster using kubespray(Ansbile Playbooks Used internally by kubespray).
+
+
+Managed K8s Clustes (Cloud Services)
+EKS --> Elastic Kubernetes Service(AWS)
+AKS --> Azure Kubernetes Service(Azure)
+GKE --> Google Kubernetes Engine(GCP)
+IKE --> IBM K8s Engine(IBM Cloud)
+
+KOPS --> Kubernetes Operations is a software using which we can create production ready
+highily available kubenetes services in Cloud like AWS.KOPS will leverage Cloud Sevices like
+AWS AutoScaling & Lanuch Configurations to setup K8's Master & Workers. It will Create 2 ASG & Lanuch Configs
+one for master and one for worekrs. Thesse Auto Scaling Groups will manage EC2 Instances.
+
+
+
+
+
+https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#-strong-getting-started-strong-
+
+
+Name Spaces
+
+kubectl get namespaces
+
+# Create Name Space Using Imperative Command
+
+kubectl create namespace <nameSpaceName>
+
+ex:
+# Create name space using command(Imperative)
+kubectl create ns test-ns
+
+# Add labels to the existing name space
+
+kubectl label namespaces <namespace> <labelKey>=<value>
+
+ex:
+kubectl label namespaces test-ns team=testingteam
+
+
+Or same can be done using declarive way
+
+# Using Declarative Manifest file
+
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: <NameSpaceName>
+ lables:           # Labels are key value pairs(Metadata)
+   <key>: <value>
+   <key>  <value>
+
+# Example   
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: testingteam
+
+# Command to apply  
+kubectl apply -f <fileName>.yaml
+
+ex:
+
+kubectl apply -f test-ns.yaml
+
+
+
+
+
+# Create POD Using Command
+
+
+kubectl run <podName> --image=<imageName> --port=<containerPort> -n <namespaceName>
+
+ex:
+# If we don't mention name space it will create in default(current) namespace.
+kubectl run nginxpod --image=nginx --labels app=nginx --port=80
+
+
+
+# POD Manifest
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: <PodName>
+  labels:
+    <Key>: <value>
+  namespace: <nameSpaceName>
+spec:
+  containers:
+  - name: <NameOfTheCotnainer>
+    image: <imagaName>
+    ports:
+    - containerPort: <portOfContainer>
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+    
+
+# Another Application
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pythonapp
+  labels:
+    app: pythonapp
+spec:
+  containers:
+  - name: pythonapp
+    image: dockerhandson/python-flask-app:2
+    ports:
+    - containerPort: 5000
+    
+    
+    
+
+
+Example Pod
+-----------
+apiVersion: v1
+kind: Pod
+metadata:
+  name: javawebapp
+  labels:
+    app: javawebapp
+  namespace: test-ns
+spec:
+  containers:
+  - name: javawebapp
+    image: dockerhandson/java-web-app:1
+    ports:
+    - containerPort: 8080
+
+
+
+
+kubectl apply -f <fileName.yml>
+kubectl apply -f <fileName.yml> -n <namespaceName>
+
+
+kubectl apply -f javawebapp.yaml    
+
+
+Another Example
+---------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mavenwebapppod
+  namespace: test-ns
+  labels:
+    app: mavenwebapp
+spec:
+  containers:
+  - name: mavenwebapp
+    image: dockerhandson/maven-web-application:1
+    ports:
+    - containerPort: 8080
+
+# List pods from current(default) ns
+kubect get pods
+
+# List pods from given  ns
+kubect get pods -n <namespaceName>
+
+ex:
+kubect get pods -n test-ns
+
+
+kubectl get all 
+kubectl get pods 
+kubectl get pods --show-labels
+kubectl get pods -o wide
+kubectl get pods -o wide --show-labels
+
+kubectl  describe pod <podName>
+kubectl  describe pod <podName> -n <namespace>
+
+
+
+
+
+
+POD --> Pod is the smallest building block which we can deploy in k8s.Pod represents running process.Pod contains one or more containers.These container will share same network,storage and any other specifications.Pod will have unique IP Address in k8s cluster.
+
+Pods
+ SingleContainerPods --> Pod will have only one container.
+ 
+ MultiContainerPods(SideCar) --> POD will two or more contianers.
+ 
+ex:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nodeapppod
+  labels:
+    app: nodeapp
+spec:
+  containers:
+  - name: nodeapp
+    image: dockerhandson/nodejs-app-mss:2
+    ports:
+    - containerPort: 9981
+  - name: ngnixapp
+    image: nginx
+    ports:
+    - containerPort: 80
+
+
+
+
+
+
+K8's Service   ---> In Kubernetes Service makes our pods accessable/discoverable with in the cluster or exposing them to outside cluster.
+               	    service will identify pods using it's labels And Selector. Whenever we create a service a ClusterIP (virtual IP) Address will be allocated for that serivce and DNS 		    entry will be created for that IP. So internally we can access using service name(DNS).
+						
+	
+Service
+========
+apiVersion: v1
+kind: Service
+metadata:
+  name: <serviceName>
+  namespace: <nameSpace>
+spec:
+  type: <ClusterIP/NodePort>
+  selector:
+     <key>: <value>
+  ports:
+  - port: <servciePort>	# default It to 80
+    targetPort: <containerPort> 
+	
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginxsvc
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx
+  ports:
+  - port: 80
+    targetPort: 80
+
+
+kubectl apply -f <file.yml>
+
+kubectl get svc 
+kubectl get all
+
+kubectl  describe service <serviceName>
+kubectl  describe service <serviceName> -n <namespace>
+kubectl  describe service <serviceName> -o wide
+kubectl  get ep
+
+Example
+-------
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pythonapp
+  labels:
+    app: pythonapp
+spec:
+  containers:
+  - name: pythonapp
+    image: dockerhandson/python-flask-app:2
+    ports:
+    - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pythonappsvc
+spec:
+  type: ClusterIP
+  selector:
+    app: pythonapp
+  ports:
+  - port: 80
+    targetPort: 5000
+    
+    
+	
+Example:
+-------
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mavenwebapppod
+  namespace: test-ns
+  labels:
+    app: mavenwebapp
+spec:
+  containers:
+  - name: mavenwebapp
+    image: dockerhandson/maven-web-application:1
+    ports:
+    - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+     app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+    
+    
+
+
+One more app(Example)
+---------------------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: javawebapp
+  labels:
+    app: javawebapp
+  namespace: test-ns
+spec:
+  containers:
+  - name: javawebapp
+    image: dockerhandson/java-web-app:1
+    ports:
+    - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+    
+
+What is node port range?
+30000-32767
+
+
+kubectl get all --all-namespaces
+kubectl get all -n <namespace>
+kubectl get pods -n <namespace>
+kubectl get pods -n <namespace> - o wide
+
+kubectl get svc -n <namespace>
+
+
+What is FQDN?
+Fully Qualified Domain name. 
+If one POD need access to service & which are in differnent names space we have to use FQDN of the serivce.
+Syntax: <serivceName>.<namespace>.svc.cluster.local
+ex: mavenwebappsvc.test-ns.svc.cluster.local
+
+
+
+ACCESS OUTSIDE USING NODEIP:NODEPORT.
+With in the cluster one application(POD) can access other applications(PODS) using Service name.
+
+
+
+ACCESS OUTSIDE USING NODEIP:NODEPORT.
+With in the cluster one application(POD) can access other applications(PODS) using Service name.
+
+
